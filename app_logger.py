@@ -70,26 +70,36 @@ def get_active_window():
         print(sys.version)
     return {'pid': pid, 'name': active_window_name, 'path': path, 'time': time.time()}
 
+NOT_QUITTING = True
 ENABLED = True
 counted = 0
+f = None
 
 def enable_disable(systray):
     global ENABLED
     ENABLED = not ENABLED
     if(ENABLED):
-        print('Enabled')
         systray.update(icon='on.ico')
     #    systray.update(menu_options=menu_options_enabled)
     else:
-        print('Disabled')
+        if f:
+            f.flush()
         systray.update(icon='off.ico')
     #    systray.update(menu_options=menu_options_disabled)
-    
+
+
+def on_quit_callback(systray):
+    global NOT_QUITTING
+    if f:
+        f.flush()
+    NOT_QUITTING = False
+
+
 menu_options_enabled = (("Enable/Disable", None, enable_disable),)
 #menu_options_disabled = (("Enable", None, enable_disable),)
 
 #icon by: https://www.flaticon.com/free-icon/growth_3094918?term=stats&page=1&position=9&page=1&position=9&related_id=3094918&origin=search
-systray = SysTrayIcon("on.ico", "System logger", menu_options_enabled)
+systray = SysTrayIcon("on.ico", "App logger", menu_options_enabled, on_quit=on_quit_callback, default_menu_index=0)
 systray.start()
 
 def get_new_file_name():
@@ -97,15 +107,18 @@ def get_new_file_name():
     print('File: ', f)
     return f
 
-def logging_function(date, time, pid, name, path, duration):
+def logging_function(pid, name, path, duration):
+    cur_date = time.strftime("%Y-%m-%d")
+    cur_time = time.strftime("%H:%M:%S")
+    
     global counted
     counted += 1
-    out = ';'.join([str(i) for i in [date, 
-                               time,
-                               pid,
-                               name.replace('\\', '\\\\').replace('""', '\\"') if name else '',
-                               path.replace('\\', '\\\\').replace('""', '\\"') if path else '', 
-                               duration]])
+    out = ';'.join([str(i) for i in [cur_date, 
+                                     cur_time,
+                                     pid,
+                                     name.replace('\\', '\\\\').replace('""', '\\"') if name else '',
+                                     path.replace('\\', '\\\\').replace('""', '\\"') if path else '', 
+                                     duration]])
     print(counted, out, end='\r')
     return(out)
 
@@ -114,21 +127,36 @@ last = {'pid': None,
         'path': None,
         'time': time.time()}
 
-with open(get_new_file_name(), 'a+') as f:
-    while True:
+f = open(get_new_file_name(), 'a+')
+if not f:
+    print('Something went wrong starting')
+else:
+    while NOT_QUITTING:
         time.sleep(0.1)
         if(ENABLED):
+            if last['pid'] is None:
+                f.write(logging_function(pid = -1,
+                                         name = 'Started',
+                                         path = '',
+                                         duration = 0) + '\n')
             active = get_active_window()
             if (active['name'] == last['name']) and (last['pid'] == active['pid']):
                 continue
-            f.write(logging_function(date = time.strftime("%Y-%m-%d"),
-                                     time = time.strftime("%H:%M:%S"),
-                                     pid = last['pid'],
+            f.write(logging_function(pid = last['pid'],
                                      name = last['name'],
                                      path = last['path'],
                                      duration = active['time'] - last['time']) + '\n')
             last = active
         else:
+            if last['pid'] is not None:
+                f.write(logging_function(pid = last['pid'],
+                                         name = last['name'],
+                                         path = last['path'],
+                                         duration = time.time() - last['time']) + '\n')
+                f.write(logging_function(pid = -1,
+                                         name = 'Stopped',
+                                         path = '',
+                                         duration = 0) + '\n')
             last = {'pid': None,
                     'name': None,
                     'path': None,

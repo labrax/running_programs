@@ -119,7 +119,7 @@ def logging_function(pid, name, path, duration):
                                      name.replace('\\', '\\\\').replace('""', '\\"') if name else '',
                                      path.replace('\\', '\\\\').replace('""', '\\"') if path else '', 
                                      duration]])
-    print(counted, out, end='\r')
+    print(counted, cur_time, path, duration, "                                  ", end='\r')
     return(out)
 
 last = {'pid': None,
@@ -142,17 +142,23 @@ else:
             active = get_active_window()
             if (active['name'] == last['name']) and (last['pid'] == active['pid']):
                 continue
-            f.write(logging_function(pid = last['pid'],
-                                     name = last['name'],
-                                     path = last['path'],
-                                     duration = active['time'] - last['time']) + '\n')
-            last = active
-        else:
-            if last['pid'] is not None:
+            try:
                 f.write(logging_function(pid = last['pid'],
                                          name = last['name'],
                                          path = last['path'],
-                                         duration = time.time() - last['time']) + '\n')
+                                         duration = active['time'] - last['time']) + '\n')
+            except Exception as e:
+                print(e)
+            last = active
+        else:
+            if last['pid'] is not None:
+                try:
+                    f.write(logging_function(pid = last['pid'],
+                                             name = last['name'],
+                                             path = last['path'],
+                                             duration = active['time'] - last['time']) + '\n')
+                except Exception as e:
+                    print(e)
                 f.write(logging_function(pid = -1,
                                          name = 'Stopped',
                                          path = '',

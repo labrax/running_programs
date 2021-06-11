@@ -2,6 +2,7 @@ import sys
 import psutil
 import time
 from infi.systray import SysTrayIcon
+import subprocess
 
 BASE_PATH = 'C:\\Users\\vroth\\Google Drive\\Projetos\\running_programs\\'
 
@@ -87,6 +88,8 @@ def enable_disable(systray):
         systray.update(icon='off.ico')
     #    systray.update(menu_options=menu_options_disabled)
 
+def generate_report(systray):
+    subprocess.Popen(["python", "plots.py"])
 
 def on_quit_callback(systray):
     global NOT_QUITTING
@@ -95,7 +98,8 @@ def on_quit_callback(systray):
     NOT_QUITTING = False
 
 
-menu_options_enabled = (("Enable/Disable", None, enable_disable),)
+menu_options_enabled = (("Enable/Disable", None, enable_disable),
+                        ("Generate report", None, generate_report))
 #menu_options_disabled = (("Enable", None, enable_disable),)
 
 #icon by: https://www.flaticon.com/free-icon/growth_3094918?term=stats&page=1&position=9&page=1&position=9&related_id=3094918&origin=search

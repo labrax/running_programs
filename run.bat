@@ -1,3 +1,4 @@
 @echo off
 TITLE App logger
-python app_logger.py
+start /b pythonw app_logger.py
+exit

@@ -1,1 +1,4 @@
 *.csv
+20210611_jupyter_plots.html
+.ipynb_checkpoints/
+__pycache__/
